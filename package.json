@@ -1,0 +1,64 @@
+{
+  "name": "dsh-team-employees",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "description": "把 DeepSeek Harness 变成多员工协同团队：员工花名册、内容流水线、一道人工闸门，外加一个会动的办公室界面",
+  "license": "MIT",
+  "author": "syc67169-source",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "multi-agent",
+    "agent-team",
+    "content-pipeline"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/syc67169-source/dsh-team-employees.git"
+  },
+  "homepage": "https://github.com/syc67169-source/dsh-team-employees#readme",
+  "bugs": {
+    "url": "https://github.com/syc67169-source/dsh-team-employees/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./tools": "./lib/tools.js",
+    "./content": "./lib/content-tools.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "employees.json",
+    "bin",
+    "docs",
+    "test",
+    "tools",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node test/smoke.mjs && node test/content.smoke.mjs",
+    "preview": "node tools/preview.mjs",
+    "shot": "node tools/screenshot.mjs"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-settings"
+      ]
+    }
+  }
+}

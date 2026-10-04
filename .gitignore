@@ -1,0 +1,16 @@
+# macOS / 编辑器
+.DS_Store
+*.swp
+
+# 依赖与安装残留
+node_modules/
+*.log
+
+# 安装脚本和自检留下的备份
+*.bak
+*.team.bak
+*.tmp-*
+
+# 预览工具生成的中间产物（图片会提交，HTML 不提交）
+docs/preview.html
+docs/preview-*.html

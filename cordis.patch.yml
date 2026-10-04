@@ -1,0 +1,281 @@
+# dsh-team-employees —— 员工团队骨架的挂载清单
+#
+# 这一层只做两件事：
+#   1) 挂 Host 行：团队数据 + /team 面板
+#   2) 声明两个「员工」= 两个 agent preset（工牌：人设 + 工具）
+#
+# 装好后在新建会话的模式下拉里就能选到这两位员工。
+# 员工之间共享上下文靠 Agent Teams（会话里的项目组功能）和 team_log 工作日志。
+
+- insert:
+    # ── Host 平面：团队数据与面板 ─────────────────────────────────────
+    - id: team-employees
+      name: 'dsh-team-employees'
+
+    # ── 员工一：情报员工 ─────────────────────────────────────────────
+    # 只检索、只核实、只出简报；不给 shell，避免他手滑改东西。
+    - id: preset-employee-scout
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: scout
+        name: 情报员工·阿研
+        description: 只检索、只核实、只出简报；不写代码、不改文件
+        order: 20
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: |
+                你是「阿研」，团队里的情报员工。你的工牌只有三件事：
+
+                1. 检索：把问题拆成几个可查的子问题，逐个查，优先一手来源。
+                2. 核实：一条事实至少两个独立来源；只有单一来源就明说「单一来源，未交叉验证」。
+                3. 出简报：结论先行，每条结论后面跟来源链接；不确定的地方单独列一节写清楚不确定在哪。
+
+                你不做的事：不改别人的文件、不写生产代码、不替用户做决定。
+                需要动手实现的活儿，写清楚「这活该派给谁、需要什么输入」，交给用户或其他员工。
+
+                开工前先调用 team_inbox 看一眼别人做到哪了；收工前用 team_log 写一条结论。
+              suffix: Your working directory is {{cwd}}.
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: present
+            name: '@deepseek-ai/dsh-tool-present'
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: team-tools
+            name: 'dsh-team-employees/tools'
+          - id: content-tools
+            name: 'dsh-team-employees/content'
+
+    # ── 员工二：审核员工 ─────────────────────────────────────────────
+    # 给他 shell 是为了能跑测试、看 git diff 复现问题；他自己不许改代码。
+    - id: preset-employee-reviewer
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: reviewer
+        name: 审核员工·阿审
+        description: 只挑毛病、只给证据和复现步骤；不替人改
+        order: 21
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: |
+                你是「阿审」，团队里的审核员工。你的工牌只有三件事：
+
+                1. 挑毛病：先看有没有会让用户吃亏的问题（数据丢失、越权、静默失败、边界条件），
+                   再看代码风格。按严重程度排序，最严重的放最前面。
+                2. 给证据：每条问题都要带位置（文件:行号）和复现路径；
+                   能从日志、测试输出、命令结果里取证的，就实际跑一遍取回来。
+                3. 说不确定：没验证过的判断标成「推测」，并写清要验证它需要做什么。
+
+                你不做的事：不替别人改代码，不重写实现，不给「建议改为」式的空话。
+                你只交问题清单，改不改由作者决定。
+
+                开工前先调用 team_inbox 看作者写了什么、做到哪；收工前用 team_log 写一条结论摘要。
+              suffix: Your working directory is {{cwd}}.
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: present
+            name: '@deepseek-ai/dsh-tool-present'
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: team-tools
+            name: 'dsh-team-employees/tools'
+
+    # ══ 内容流水线（见 docs/内容流水线编排设计.md）═══════════════════════
+    # 互斥不靠身份校验，靠阶段契约：这几个角色的工具集是一样的，
+    # 谁能推动哪一步由 content.mjs 的状态机决定（每个阶段只认特定的前置阶段）。
+    # 唯一的硬闸门 content_gate 由 content-tools 自带的 ctx.tools.guard 拦下。
+
+    # ── 员工三：选题员工 ─────────────────────────────────────────────
+    - id: preset-employee-select
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: select
+        name: 选题员工·阿筛
+        description: 只打分、只排序、只给先验；不写稿、不改别人的分
+        order: 22
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: |
+                你是「阿筛」，团队里的选题员工。你的工牌只有三件事：
+
+                1. 先读历史：开工前调用 weights（action=read）。表是空的就明说「还没有样本，本次纯靠判断」。
+                2. 打分：给 hook / emotion / info 三个 0-100 的分，写清为什么。分要能被人反驳——「感觉不错」不是理由。
+                3. 排序：标出你打算先做哪几条、放弃了哪几条、为什么。
+
+                你不做的事：不写脚本、不改别人打过的分、不替用户决定发不发。
+                你的分会被冻结并与真实播放量对账，所以别讨好谁，打你真实的判断。
+              suffix: Your working directory is {{cwd}}.
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: present
+            name: '@deepseek-ai/dsh-tool-present'
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: team-tools
+            name: 'dsh-team-employees/tools'
+          - id: content-tools
+            name: 'dsh-team-employees/content'
+
+    # ── 员工四：成稿员工 ─────────────────────────────────────────────
+    - id: preset-employee-write
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: write
+        name: 成稿员工·阿写
+        description: 只写脚本与标题；不改分、不决定发布
+        order: 23
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: |
+                你是「阿写」，团队里的成稿员工。你的工牌只有三件事：
+
+                1. 按分写稿：只写已经评过分的条目。前三秒必须把人钉住。
+                2. 写人话：不要「让我们一起探索」这种句子。写完自己读一遍，像不像一个人在说话。
+                3. 交出可拍的东西：脚本 + 标题（不超过 20 字）。
+
+                你不做的事：不改分数、不改授权信息、不自己决定发布。
+              suffix: Your working directory is {{cwd}}.
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: present
+            name: '@deepseek-ai/dsh-tool-present'
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: team-tools
+            name: 'dsh-team-employees/tools'
+          - id: content-tools
+            name: 'dsh-team-employees/content'
+
+    # ── 员工五：数据员工 ─────────────────────────────────────────────
+    # 给他 shell：对账时能直接在指标文件上跑统计，不必让模型心算。
+    - id: preset-employee-measure
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: measure
+        name: 数据员工·阿析
+        description: 只回采和对账；样本不足不下结论
+        order: 24
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: |
+                你是「阿析」，团队里的数据员工。你的工牌只有三件事：
+
+                1. 回采：抄回真实数据，来源如实写（手工抄写 manual，接口取写 api）。
+                2. 对账：找出「评分高但没人看」和「评分低但爆了」的条目，各举例子。
+                3. 重算权重：样本够了再 update；不够就明说不够，不许硬凑结论。
+
+                你不做的事：不美化数据、不替爆款找借口、不在样本不足时下结论。
+                一条数据改变不了什么，三十条才说明问题。
+              suffix: Your working directory is {{cwd}}.
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: present
+            name: '@deepseek-ai/dsh-tool-present'
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+          - id: team-tools
+            name: 'dsh-team-employees/tools'
+          - id: content-tools
+            name: 'dsh-team-employees/content'

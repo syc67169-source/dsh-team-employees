@@ -1,0 +1,39 @@
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      # 语法先过一遍：插件是纯 ESM + 一个经典脚本，没有构建步骤，
+      # 语法错就是加载错，必须在跑测试之前挡住。
+      - name: 语法检查
+        run: |
+          fail=0
+          for file in lib/*.js lib/*.mjs bin/*.mjs test/*.mjs tools/*.mjs; do
+            node --check "$file" || fail=1
+          done
+          exit $fail
+
+      # 这两套自检不需要 dsh 本体：本机没装 dsh 时，schema 类断言会
+      # 自动降级并打印说明，其余断言（注册契约、接口、界面渲染）照跑。
+      - name: 自检
+        run: npm test
+
+      # 界面渲染是纯 Node（vm + 最小 React 运行时），不需要浏览器；
+      # 这一步能挡住客户端包被改坏但自检没覆盖到的情况。
+      - name: 界面渲染冒烟
+        run: |
+          node tools/preview.mjs
+          node tools/preview.mjs --only=office
+          node tools/preview.mjs --only=settings
