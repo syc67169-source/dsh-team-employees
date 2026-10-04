@@ -1,6 +1,6 @@
 {
   "name": "dsh-team-employees",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "description": "把 DeepSeek Harness 变成多员工协同团队：员工花名册、内容流水线、一道人工闸门，外加一个会动的办公室界面",
@@ -42,12 +42,16 @@
     "test",
     "tools",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "research-headless.patch.yml",
+    "CHANGELOG.md"
   ],
   "scripts": {
-    "test": "node test/smoke.mjs && node test/content.smoke.mjs && node --test test/stability.mjs test/client-lifecycle.mjs",
+    "test": "node test/smoke.mjs && node test/content.smoke.mjs && node --test test/stability.mjs test/client-lifecycle.mjs test/research.mjs test/research-process.mjs test/research-interface.mjs",
     "preview": "node tools/preview.mjs",
-    "shot": "node tools/screenshot.mjs"
+    "shot": "node tools/screenshot.mjs",
+    "research:worker": "node bin/research-worker.mjs",
+    "research:stop": "node bin/research-worker.mjs --stop"
   },
   "dsh": {
     "bundle": {

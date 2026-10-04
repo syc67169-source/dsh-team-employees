@@ -122,6 +122,7 @@ const LIVE_SESSIONS = [
   { id: 's-other', header: { agentPreset: 'reviewer' } }
 ]
 const fakeServices = {
+  connection: { requestRejection: () => undefined },
   agentPresets: { list: async () => PRESETS.map((preset) => ({ ...preset, description: '' })) },
   sessions: { list: () => LIVE_SESSIONS },
   sessionProjections: {
