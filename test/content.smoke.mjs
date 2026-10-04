@@ -188,7 +188,7 @@ await check('review 阶段无法被状态机直接推进', async () => {
 await check('未裁决时不许排期', async () => {
   await assert.rejects(
     () => tool('content_publish').execute({ id: itemId, platform: 'douyin', account: '@a' }, {}),
-    /只有 queued 能排期/
+    /必须先通过人工审核/
   )
 })
 
@@ -219,11 +219,17 @@ await check('放行之后才能排期，且只写本地发布包', async () => {
   const out = await tool('content_publish').execute({
     id: itemId, platform: 'douyin', account: '@mine', scheduledAt: '2026-10-04T11:00:00+10:00', aiLabeled: true
   }, {})
-  assert.match(out.text, /published/)
+  assert.match(out.text, /queued/)
   const item = await content.readItem(itemId)
-  assert.equal(item.stage, 'published')
+  assert.equal(item.stage, 'queued')
   assert.equal(item.targets.length, 1)
   assert.equal(item.features.publishHour, 11)
+})
+
+await check('发布包不能回采；人工确认后才变成 published', async () => {
+  await assert.rejects(() => content.recordMetrics(itemId, { platform: 'douyin', views: 1 }), /已确认发布/)
+  await content.confirmPublication(itemId, { platform: 'douyin', ref: 'https://example.test/video/1', by: 'YG' })
+  assert.equal((await content.readItem(itemId)).stage, 'published')
 })
 
 await check('绕过闸门硬写 queued 也会被 publish 拒绝', async () => {
@@ -364,11 +370,11 @@ await check('账本单位换算正确（1e8 单位 = 1 元）', () => {
   assert.equal(spend.source, 'ledger')
 })
 
-await check('账本缺失时不炸，只说明读不到', async () => {
+await check('账本缺失时业务照常，不能宣称已记账', async () => {
   const parsed = await usage.readUsage()
   assert.equal(parsed, null)
   const out = await tool('content_new').execute({ topic: 'nocost', owner: '阿研' }, {})
-  assert.match(out.text, /账本读不到/)
+  assert.doesNotMatch(out.text, /本次记账/)
   const id = /已登记：([a-z0-9-]+)/.exec(out.text)[1]
   assert.equal((await content.readItem(id)).cost.cny, 0)
 })
@@ -380,7 +386,7 @@ await check('账本存在时不报「读不到」，也不编造金额', async (
   }), 'utf8')
   const out = await tool('content_new').execute({ topic: 'costed', owner: '阿研' }, {})
   assert.doesNotMatch(out.text, /账本读不到/)
-  assert.match(out.text, /本次记账/)
+  assert.doesNotMatch(out.text, /本次记账/)
 })
 
 await check('cost_report 汇总队列成本', async () => {
