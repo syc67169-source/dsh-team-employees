@@ -147,3 +147,11 @@ dsh-team-employees/
 ## 许可
 
 MIT，见 [LICENSE](LICENSE)。
+
+## 联系与交流
+
+用这个插件遇到问题、想提需求，或者只是想让别人知道你在拿它干什么——扫码加我：
+
+<img src="docs/images/qq.jpg" alt="QQ 二维码" width="240">
+
+QQ：`3657854368`（EasonS）
