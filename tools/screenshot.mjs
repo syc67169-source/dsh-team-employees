@@ -24,9 +24,10 @@ const BROWSERS = [
   '/usr/bin/chromium-browser'
 ]
 
+// 高度按内容给：多了会留一大片空白，少了会把最后一行切掉
 const SHOTS = [
-  { surface: 'office', height: 1150 },
-  { surface: 'settings', height: 1250 }
+  { surface: 'office', height: 880 },
+  { surface: 'settings', height: 830 }
 ]
 
 async function findBrowser() {
